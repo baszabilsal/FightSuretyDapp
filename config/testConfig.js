@@ -24,12 +24,29 @@ var Config = async function(accounts) {
     let firstAirline = accounts[1];
 
     let flightSuretyData = await FlightSuretyData.new();
-    let flightSuretyApp = await FlightSuretyApp.new();
+    let flightSuretyApp = await FlightSuretyApp.new(flightSuretyData.address);
 
     
     return {
         owner: owner,
-        firstAirline: firstAirline,
+        firstAirline:owner,
+        secondAirline:accounts[1],
+        thirdAirline:accounts[2],
+        fouthAirline:accounts[3],
+        fifthAirline:accounts[4],
+        sixthAirline:accounts[5],
+        flightOne: {
+            flight: "flightOne",
+            departureTime: (Math.ceil(new Date().valueOf()/1000)) + 72000
+        },
+        flightTwo: {
+            flight: "flightTwo",
+            departureTime: (Math.ceil(new Date().valueOf()/1000)) +36000
+        },
+        flightThatHasDeparted: {
+            flight: "flightThatHasDeparted",
+            departureTime: (Math.ceil(new Date().valueOf()/1000)) - 7200
+        },
         weiMultiple: (new BigNumber(10)).pow(18),
         testAddresses: testAddresses,
         flightSuretyData: flightSuretyData,

@@ -7,7 +7,6 @@ contract('Flight Surety Tests', async (accounts) => {
   var config;
   before('setup contract', async () => {
     config = await Test.Config(accounts);
-    await config.flightSuretyData.authorizeCaller(config.flightSuretyApp.address);
   });
 
   /****************************************************************************************/
@@ -74,21 +73,81 @@ contract('Flight Surety Tests', async (accounts) => {
   it('(airline) cannot register an Airline using registerAirline() if it is not funded', async () => {
     
     // ARRANGE
-    let newAirline = accounts[2];
 
     // ACT
     try {
-        await config.flightSuretyApp.registerAirline(newAirline, {from: config.firstAirline});
+        await config.flightSuretyApp.registerAirline(config.secondAirline, {from: config.owner});
     }
     catch(e) {
 
     }
-    let result = await config.flightSuretyData.isAirline.call(newAirline); 
+    let result = await config.flightSuretyData.isAirline.call(config.secondAirline); 
+
+    // ASSERT
+    assert.equal(result, true, "Airline should not be able to register another airline if it hasn't provided funding");
+
+  });
+  
+  
+  it('(airline) cannot register an Airline using registerAirline() if it is not funded', async () => {
+    
+    await config.flightSuretyApp.registerAirline(config.thirdAirline, {from: config.owner});  
+    await config.flightSuretyApp.registerAirline(config.fouthAirline, {from: config.owner});
+
+    await config.flightSuretyData.setAirlineIsVoter(config.secondAirline, {from: config.owner});         
+    await config.flightSuretyData.setAirlineIsVoter(config.thirdAirline, {from: config.owner});
+    await config.flightSuretyData.setAirlineIsVoter(config.fouthAirline, {from: config.owner}); 
+    
+    await config.flightSuretyApp.registerAirline(config.fifthAirline, {from: config.owner});  
+    let result = await config.flightSuretyData.isAirline.call(config.fifthAirline); 
 
     // ASSERT
     assert.equal(result, false, "Airline should not be able to register another airline if it hasn't provided funding");
 
   });
- 
+  it('(airline) cannot register an Airline using registerAirline() if it is not funded', async () => {
+     
+    await config.flightSuretyApp.registerAirline(config.fifthAirline, {from: config.secondAirline});
+    let result = await config.flightSuretyData.isAirline.call(config.fifthAirline); 
 
+    // ASSERT
+    assert.equal(result, true,"bas");
+
+  });
+  it('registerFlight', async () => {    
+    await config.flightSuretyApp.registerFlight(config.flightOne.flight,config.flightOne.departureTime, {from: config.owner});  
+    let flightKey = await config.flightSuretyData.getFlightKey.call(config.owner,config.flightOne.flight,config.flightOne.departureTime); 
+    let flightId = await config.flightSuretyData.getFlightIdByKey.call(flightKey);
+    let flightDetail = await  config.flightSuretyData.getFlightDetail.call(flightId);
+    // ASSERT
+    assert.equal(flightDetail.id > 0, true, "Airline should not be able to register another airline if it hasn't provided funding");
+
+  });
+  it('registerInsurance', async () => {     
+    let flightKey = await config.flightSuretyData.getFlightKey.call(config.owner,config.flightOne.flight,config.flightOne.departureTime); 
+    let flightId = await config.flightSuretyData.getFlightIdByKey.call(flightKey);
+    await config.flightSuretyApp.buyInsurance(flightId, {from: config.owner,value:web3.utils.toWei("1", "ether")}); 
+      
+    let ids = await config.flightSuretyData.getInsurancesByPassenger(config.owner); 
+    let insuranceDetail = await config.flightSuretyData.getInsuranceDetail(ids);
+    // ASSERT
+    assert.equal(insuranceDetail.id, true,"register insurance");
+
+  });
+  it('processFlightStatus', async () => {     
+    let STATUS_CODE_LATE_AIRLINE = 20;
+    await config.flightSuretyApp.processFlightStatus(config.owner,config.flightOne.flight,config.flightOne.departureTime,STATUS_CODE_LATE_AIRLINE);
+    let creditAmount = await config.flightSuretyApp.getCreditedAmount(config.owner);
+    
+    assert.equal(creditAmount > 0, true,"refund when flight is late"+ creditAmount);
+
+  });
+  
+  it('withdraw creditedAmount', async () => {     
+    await config.flightSuretyApp.withdrawCreditedAmount(config.owner);
+    let reaminCreditAmount = await config.flightSuretyApp.getCreditedAmount(config.owner);
+    let contractBalance = await config.flightSuretyData.getContractBalance.call();
+    assert.equal(reaminCreditAmount == 0, true,"refund when flight is late"+ contractBalance);
+
+  });
 });
