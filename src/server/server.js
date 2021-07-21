@@ -11,8 +11,8 @@ let web3 = new Web3(new Web3.providers.WebsocketProvider(config.url.replace('htt
 web3.eth.defaultAccount = web3.eth.accounts[0]
 const flightSuretyApp = new web3.eth.Contract(FlightSuretyApp.abi, config.appAddress)
 const flightSuretyData = new web3.eth.Contract(FlightSuretyData.abi, config.dataAddress)
-const NUMBER_OF_ACCOUNTS = 50 // update in truffle.js and start ganacle-cli with the right number of accounts if necessary
-const NUMBER_OF_ORACLES = 30
+const NUMBER_OF_ACCOUNTS = 10 
+const NUMBER_OF_ORACLES = 3
 
 const Server = {
   oracles: [],
@@ -57,9 +57,10 @@ const Server = {
         this.flightList.push({
           id: totalFlight,
           key: flightDetail.key,
-          flight: flightDetail.flight,
+          flightName: flightDetail.flight,
           airtline: flightDetail.airtline,
-          departureTime: flightDetail.departureTimestamp
+          departureTime: flightDetail.departureTimestamp,          
+          status : flightDetail.departureStatusCode
         });
       })
       .on('error', error => { console.log(error) })
@@ -73,6 +74,7 @@ const Server = {
         } = log
 
         console.log(`${event}: index ${index},airline ${airline}, flight ${flight}, landing ${timestamp}`)
+      
         await this.submitResponses(airline,flight, timestamp)
       })
 
@@ -116,15 +118,14 @@ const Server = {
         // console.log(error.message)
       }
     })
-
-    // get and store existing flights
     this.updateFlightList()
   },
 
   submitResponses: async function (airtline,flight, timestamp) {
+    // random number out of [10, 20, 30, 40, 50]
+    const statusCode = (Math.floor(Math.random() * 5) + 1) * 10
     this.oracles.forEach(async oracle => {
-      // random number out of [10, 20, 30, 40, 50]
-      const statusCode = (Math.floor(Math.random() * 5) + 1) * 10
+  
       // get indexes
       const oracleIndexes = await flightSuretyApp.methods.getMyIndexes().call({ from: oracle })
       oracleIndexes.forEach(async index => {
@@ -145,6 +146,8 @@ const Server = {
 
   updateFlightList: async function () {
     // Clean array
+    
+    console.log('updateFlightList');
     this.flightList = []
     try {
       const totalFlight = await flightSuretyData.methods.totalFlight().call()
@@ -154,9 +157,10 @@ const Server = {
         this.flightList.push({
           id: totalFlight,
           key: flightDetail.key,
-          flight: flightDetail.flight,
+          flightName: flightDetail.flight,
           airtline: flightDetail.airtline,
-          departureTime: flightDetail.departureTimestamp
+          departureTime: flightDetail.departureTimestamp,
+          status : flightDetail.departureStatusCode
         });
       }
     } catch (error) {

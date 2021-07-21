@@ -53,8 +53,9 @@ export default class Contract {
   async fetchFlightStatus (flightId) {
     try {
       let flightDetail = await this.flightSuretyApp.methods.getFlightDetail(flightId).call();
+
       await this.flightSuretyApp.methods
-        .fetchFlightStatus(flightDetail.flight, flightDetail.departureTimestamp, flight.airline)
+        .fetchFlightStatus( flightDetail.airline,flightDetail.flight, flightDetail.departureTimestamp)
         .send({ from: this.account })
     } catch (error) {
       return {
@@ -83,6 +84,7 @@ export default class Contract {
       await this.flightSuretyApp.methods
         .registerFlight(flightName,departureTimestamp)
         .send({ from: this.account })
+  
       return {
         address: this.account,
         error: ''
@@ -95,13 +97,12 @@ export default class Contract {
     }
   }
   async registerInsurance (flightId,price) {
-    const amount = this.web3.utils.toWei(price.toString(), 'ether')
     try {
       await this.flightSuretyApp.methods
         .buyInsurance(flightId)
         .send({
           from: this.account,
-          value: this.web3.utils.toWei(amount.toString(), 'ether')
+          value: this.web3.utils.toWei(price.toString(), 'ether')
         })
       return { passenger: this.account }
     } catch (error) {

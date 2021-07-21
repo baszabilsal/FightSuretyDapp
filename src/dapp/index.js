@@ -5,8 +5,14 @@ import './flightsurety.css'
 
 
 (async () => {
-  let result = null
-
+  let states = {
+    0: 'unknown',
+    10: 'on time',
+    20: 'late due to airline',
+    30: 'late due to weather',
+    40: 'late due to technical reason',
+    50: 'late due to other reason'
+  };
   let contract = new Contract('localhost', () => {
     contract.isOperational((error, result) => {
       display('Operational Status', 'Check if contract is operational', [{ label: 'Operational Status', error: error, value: result }])
@@ -17,19 +23,13 @@ import './flightsurety.css'
         .then(res => {
           return res.json()
         })
-        .then(flights => {
-          
+        .then(flights => {      
         let flightsString = "";
-          flights.forEach(flight => {
-            if (flight.flight.statusCode == 0) {
-              let {
-                index,
-                flight: { id,flightName, timestamp }
-              } = flight
-              flightsString +=` <div class="row"><a> flightId : ${id} - ${flightName} - ${timestamp}</a></div>`;
-            }
-          })
+          flights.forEach(flight => {                
           
+              flightsString +=` <div class="row"><a> flightId : ${flight.id} - ${flight.flightName} - ${flight.departureTime} : status is ${flight.status} </a></div>`;
+          })
+          console.log(flightsString);
         DOM.elid('flightList').innerHTML = flightsString;
         })
     }   
@@ -54,17 +54,6 @@ import './flightsurety.css'
       const flightName = DOM.elid('registerFlightName').value
       await contract.registerFlight(flightName,departureTimestamp);
     })
-
-    DOM.elid('fund').addEventListener('click', () => {
-      let amount = DOM.elid('fundAmount').value
-      contract.fund(amount, (error, result) => {
-        display(`Airline ${sliceAddress(result.address)}`, 'Provide Funding', [{
-          label: 'Funding',
-          error: error,
-          value: `${result.amount} ETH` }])
-      })
-    })
-
     DOM.elid('registerInsuranceButton').addEventListener('click', async () => {
       let flightId = DOM.elid('registerInsuranceFlightId').value;
       let amount = DOM.elid('registerInsuranceAmount').value;
@@ -78,6 +67,9 @@ import './flightsurety.css'
       } catch (error) {
         console.log(error.message)
       }
+    })
+    DOM.elid('refreshFlightList').addEventListener('click', () => {
+      fetchAndAppendFlights();
     })
   })
 })()
